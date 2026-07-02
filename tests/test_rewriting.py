@@ -9,7 +9,7 @@ Run standalone:  python -m tests.test_rewriting
 
 import os
 os.environ.setdefault("GITHUB_USERNAME", "AjitShetti")
-os.environ["ANTHROPIC_API_KEY"] = "invalid-key-for-fallback-test"
+os.environ["GROQ_API_KEY"] = "invalid-key-for-fallback-test"
 
 from app.rewriting.bullet_rewriter import format_review, rewrite_bullets  # noqa: E402
 
