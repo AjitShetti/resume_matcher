@@ -1,13 +1,16 @@
 """
 app/rewriting/bullet_rewriter.py — LLM-powered resume bullet rewriter.
 
-Calls the Anthropic API to reframe existing resume bullets using JD vocabulary,
-with a strict anti-hallucination prompt: every fact must come from the README.
+Calls the Groq API (free tier) to reframe existing resume bullets using JD
+vocabulary, with a strict anti-hallucination prompt: every fact must come
+from the README.
 
 Safety guarantees:
 - The model is instructed never to invent technologies, metrics, or claims.
 - If the API call fails for any reason, original bullets are returned unchanged.
 - format_review() provides a mandatory side-by-side diff before any bullet is accepted.
+
+Get a free API key at: https://console.groq.com
 """
 
 from __future__ import annotations
@@ -15,7 +18,7 @@ from __future__ import annotations
 import logging
 import os
 
-import anthropic
+from groq import Groq
 
 logger = logging.getLogger(__name__)
 
@@ -92,20 +95,22 @@ def rewrite_bullets(
     )
 
     try:
-        client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
-        message = client.messages.create(
-            model="claude-opus-4-5",
+        client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
             max_tokens=1024,
-            system=_SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": user_prompt}],
+            messages=[
+                {"role": "system", "content": _SYSTEM_PROMPT},
+                {"role": "user",   "content": user_prompt},
+            ],
         )
-        raw = message.content[0].text.strip()
+        raw = response.choices[0].message.content.strip()
         rewritten = [line.strip() for line in raw.splitlines() if line.strip()]
         return rewritten
 
     except Exception as exc:  # noqa: BLE001
         logger.error(
-            "Anthropic API call failed — returning original bullets unchanged. "
+            "Groq API call failed — returning original bullets unchanged. "
             "Error: %s",
             exc,
         )
